@@ -1,0 +1,35 @@
+CREATE DATABASE skyouth_registration;
+USE skyouth_registration;
+
+CREATE TABLE members (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    last_name VARCHAR(50) NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    middle_name VARCHAR(50),
+    gender VARCHAR(10) NOT NULL,
+    dob DATE NOT NULL,
+    age INT NOT NULL,
+    place_of_birth VARCHAR(100) NOT NULL,
+    mobile VARCHAR(20) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    social_media VARCHAR(100),
+    street VARCHAR(100) NOT NULL,
+    barangay VARCHAR(50) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    province VARCHAR(50) NOT NULL,
+    parent_last_name VARCHAR(50) NOT NULL,
+    parent_first_name VARCHAR(50) NOT NULL,
+    parent_middle_name VARCHAR(50),
+    parent_relationship VARCHAR(20) NOT NULL,
+    parent_contact VARCHAR(20) NOT NULL,
+    school VARCHAR(100) NOT NULL,
+    education_level VARCHAR(50) NOT NULL,
+    year_level VARCHAR(20) NOT NULL,
+    hobbies TEXT,
+    interests TEXT,
+    medical_conditions TEXT,
+    emergency_name VARCHAR(100) NOT NULL,
+    emergency_relationship VARCHAR(50) NOT NULL,
+    emergency_contact VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

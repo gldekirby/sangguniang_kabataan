@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Form</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;    
+            align-items: center;
+            min-height: 100vh;
+            background: #1f242d;
+        }
+
+        .contact h2 {
+            font-size: 40px;
+            color: #ededed;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .contact form {
+            width: 600px;
+            text-align: center;
+        }
+
+        form .input-box {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .input-box .input-field {
+            width: 48.5%;
+        }
+
+        .field .item {
+            width: 100%;
+            padding: 18px;
+            background: transparent;
+            border: 2px solid #0ef;
+            outline: none;
+            border-radius: 6px;
+            font-size: 16px;
+            color: #ededed;
+            margin: 12px 0;
+        }
+
+        .field .item::placeholder {
+            color: rgba(255, 255, 255, .3);
+        }
+
+        .field .error-txt {
+            font-size: 14.5px;
+            color: #d93025;
+            text-align: left;
+            margin: -5px 0 10px;
+            display: none;
+        }
+
+        .field .textarea-field .item {
+            resize: none;
+        }
+
+        .form .textarea-field .error-txt {
+            margin-top: -10px;
+        }
+
+        form button {
+            padding: 12px 32px;
+            background: #0ef;
+            border: none;
+            outline: none;
+            border-radius: 6px;
+            box-shadow: 0 0 10px;
+            font-size: 16px;
+            color: #333;
+            letter-spacing: 1px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: .5s;
+        }
+
+        form button:hover {
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <section class="contact">
+        <h2>Contact Us</h2>
+
+        <form id="contact-form" action="send_email.php" method="POST">
+            <div class="input-box">
+                <div class="input-field field">
+                    <input type="text" class="item" id="name" name="name" placeholder="Full Name" autocomplete="off">
+                    <div class="error-txt">Full Name can't be blank</div>
+                </div>
+            </div>
+            <div class="input-box">
+                <div class="input-field field">
+                    <input type="email" class="item" id="email" name="email" placeholder="Email" autocomplete="off">
+                    <div class="error-txt">Email Address can't be blank</div>
+                </div>
+            </div>
+            <div class="input-box">
+                <div class="input-field field">
+                    <input type="text" class="item" id="phone" name="phone" placeholder="Phone Number" autocomplete="off">
+                    <div class="error-txt">Phone number can't be blank</div>
+                </div>
+            </div>
+            <div class="input-box">
+                <div class="input-field field">
+                    <input type="text" class="item" id="subject" name="subject" placeholder="Subject" autocomplete="off">
+                    <div class="error-txt">Subject can't be blank</div>
+                </div>
+            </div>
+            <div class="textarea-field field">
+                <textarea name="message" id="message" class="item" placeholder="Message" rows="10" cols="30" autocomplete="off"></textarea>
+                <div class="error-txt">Message can't be blank</div>
+            </div>  
+
+            <button type="submit">Submit</button>
+        </form>
+    </section>
+
+    <!-- SweetAlert for success/error messages -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        const form = document.getElementById("contact-form");
+        
+        form.addEventListener("submit", function(e) {
+            e.preventDefault();
+            
+            if (validateForm()) {
+                // Submit form via Fetch API (AJAX)
+                const formData = new FormData(form);
+                
+                fetch(form.action, {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: "Success!",
+                            text: data.message,
+                            icon: "success"
+                        });
+                        form.reset();
+                    } else {
+                        Swal.fire({
+                            title: "Error!",
+                            text: data.message,
+                            icon: "error"
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: "Error!",
+                        text: "Failed to send message. Please try again.",
+                        icon: "error"
+                    });
+                });
+            }
+        });
+
+        // Form validation
+        function validateForm() {
+            let isValid = true;
+            const name = document.getElementById("name");
+            const email = document.getElementById("email");
+            const phone = document.getElementById("phone");
+            const subject = document.getElementById("subject");
+            const message = document.getElementById("message");
+            
+            // Reset error messages
+            document.querySelectorAll(".error-txt").forEach(el => {
+                el.style.display = "none";
+            });
+            
+            // Check each field
+            if (!name.value.trim()) {
+                showError(name, "Full Name can't be blank");
+                isValid = false;
+            }
+            
+            if (!email.value.trim()) {
+                showError(email, "Email can't be blank");
+                isValid = false;
+            } else if (!isValidEmail(email.value)) {
+                showError(email, "Email is not valid");
+                isValid = false;
+            }
+            
+            if (!phone.value.trim()) {
+                showError(phone, "Phone number can't be blank");
+                isValid = false;
+            }
+            
+            if (!subject.value.trim()) {
+                showError(subject, "Subject can't be blank");
+                isValid = false;
+            }
+            
+            if (!message.value.trim()) {
+                showError(message, "Message can't be blank");
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+        
+        function showError(input, message) {
+            const errorTxt = input.parentElement.querySelector(".error-txt");
+            errorTxt.innerText = message;
+            errorTxt.style.display = "block";
+        }
+        
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+    </script>
+</body>
+</html>

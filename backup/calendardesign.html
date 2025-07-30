@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Calendar Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .calendar-day {
+            min-height: 100px;
+            position: relative;
+        }
+        .calendar-day.today {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .calendar-day.other-month {
+            opacity: 0.5;
+        }
+        .event-block {
+            position: absolute;
+            left: 0;
+            right: 0;
+            border-radius: 4px;
+            padding: 2px 4px;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .event-block:hover {
+            filter: brightness(90%);
+        }
+        .modal {
+            transition: opacity 0.2s ease;
+        }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .time-selector {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 8px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Calendar Planner</h1>
+            <div class="flex items-center space-x-4">
+                <button id="todayBtn" class="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition">
+                    Today
+                </button>
+                <div class="flex items-center space-x-2">
+                    <button id="prevMonth" class="p-2 rounded-full hover:bg-gray-200 transition">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h2 id="monthYear" class="text-xl font-semibold text-gray-700">June 2023</h2>
+                    <button id="nextMonth" class="p-2 rounded-full hover:bg-gray-200 transition">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <button id="addEventBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+                    <i class="fas fa-plus mr-2"></i> Add Event
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="grid grid-cols-7 bg-gray-100 border-b">
+                <div class="py-3 text-center font-medium text-gray-600">Sunday</div>
+                <div class="py-3 text-center font-medium text-gray-600">Monday</div>
+                <div class="py-3 text-center font-medium text-gray-600">Tuesday</div>
+                <div class="py-3 text-center font-medium text-gray-600">Wednesday</div>
+                <div class="py-3 text-center font-medium text-gray-600">Thursday</div>
+                <div class="py-3 text-center font-medium text-gray-600">Friday</div>
+                <div class="py-3 text-center font-medium text-gray-600">Saturday</div>
+            </div>
+            <div id="calendarGrid" class="grid grid-cols-7 border-t border-l">
+                <!-- Calendar days will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div id="eventModal" class="modal fixed inset-0 flex items-center justify-center" style="display: none;">
+        <div class="modal-backdrop absolute inset-0"></div>
+        <div class="bg-white rounded-lg shadow-xl z-50 w-full max-w-md">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800" id="modalTitle">Add New Event</h3>
+                    <button id="closeModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="eventForm">
+                    <input type="hidden" id="eventId">
+                    <div class="mb-4">
+                        <label for="eventTitle" class="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
+                        <input type="text" id="eventTitle" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="eventDescription" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="eventDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="startDate" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                            <input type="date" id="startDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="endDate" class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                            <input type="date" id="endDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                            <input type="time" id="startTime" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                            <input type="time" id="endTime" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="eventColor" class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                        <div class="flex space-x-2">
+                            <div class="color-option bg-blue-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent selected" data-color="blue"></div>
+                            <div class="color-option bg-red-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="red"></div>
+                            <div class="color-option bg-green-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="green"></div>
+                            <div class="color-option bg-yellow-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="yellow"></div>
+                            <div class="color-option bg-purple-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="purple"></div>
+                            <div class="color-option bg-pink-500 w-8 h-8 rounded-full cursor-pointer border-2 border-transparent" data-color="pink"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="deleteEventBtn" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 hidden">Delete</button>
+                        <button type="button" id="cancelEventBtn" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Current date and view
+            let currentDate = new Date();
+            let currentMonth = currentDate.getMonth();
+            let currentYear = currentDate.getFullYear();
+            let events = JSON.parse(localStorage.getItem('calendarEvents')) || [];
+            let editingEventId = null;
+
+            // DOM elements
+            const monthYearElement = document.getElementById('monthYear');
+            const calendarGrid = document.getElementById('calendarGrid');
+            const prevMonthBtn = document.getElementById('prevMonth');
+            const nextMonthBtn = document.getElementById('nextMonth');
+            const todayBtn = document.getElementById('todayBtn');
+            const addEventBtn = document.getElementById('addEventBtn');
+            const eventModal = document.getElementById('eventModal');
+            const closeModalBtn = document.getElementById('closeModal');
+            const cancelEventBtn = document.getElementById('cancelEventBtn');
+            const deleteEventBtn = document.getElementById('deleteEventBtn');
+            const eventForm = document.getElementById('eventForm');
+            const modalTitle = document.getElementById('modalTitle');
+            const eventIdInput = document.getElementById('eventId');
+            const eventTitleInput = document.getElementById('eventTitle');
+            const eventDescriptionInput = document.getElementById('eventDescription');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const startTimeInput = document.getElementById('startTime');
+            const endTimeInput = document.getElementById('endTime');
+            const colorOptions = document.querySelectorAll('.color-option');
+
+            // Initialize calendar
+            renderCalendar(currentMonth, currentYear);
+
+            // Event listeners
+            prevMonthBtn.addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                renderCalendar(currentMonth, currentYear);
+            });
+
+            nextMonthBtn.addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                renderCalendar(currentMonth, currentYear);
+            });
+
+            todayBtn.addEventListener('click', () => {
+                currentDate = new Date();
+                currentMonth = currentDate.getMonth();
+                currentYear = currentDate.getFullYear();
+                renderCalendar(currentMonth, currentYear);
+            });
+
+            addEventBtn.addEventListener('click', () => {
+                openEventModal();
+            });
+
+            closeModalBtn.addEventListener('click', closeEventModal);
+            cancelEventBtn.addEventListener('click', closeEventModal);
+
+            deleteEventBtn.addEventListener('click', () => {
+                if (editingEventId !== null) {
+                    events = events.filter(event => event.id !== editingEventId);
+                    saveEvents();
+                    renderCalendar(currentMonth, currentYear);
+                    closeEventModal();
+                }
+            });
+
+            eventForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                saveEvent();
+            });
+
+            // Color selection
+            colorOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    colorOptions.forEach(opt => opt.classList.remove('selected', 'border-blue-500'));
+                    option.classList.add('selected', 'border-blue-500');
+                });
+            });
+
+            // Functions
+            function renderCalendar(month, year) {
+                // Update month/year display
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                monthYearElement.textContent = `${monthNames[month]} ${year}`;
+
+                // Get first day of month and total days
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const daysInLastMonth = new Date(year, month, 0).getDate();
+
+                // Clear previous calendar
+                calendarGrid.innerHTML = '';
+
+                // Previous month's days
+                for (let i = 0; i < firstDay; i++) {
+                    const day = daysInLastMonth - firstDay + i + 1;
+                    const date = new Date(year, month - 1, day);
+                    createDayElement(day, date, true);
+                }
+
+                // Current month's days
+                const today = new Date();
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const date = new Date(year, month, i);
+                    const isToday = date.getDate() === today.getDate() && 
+                                    date.getMonth() === today.getMonth() && 
+                                    date.getFullYear() === today.getFullYear();
+                    createDayElement(i, date, false, isToday);
+                }
+
+                // Next month's days
+                const totalDaysShown = firstDay + daysInMonth;
+                const remainingDays = 7 - (totalDaysShown % 7);
+                if (remainingDays < 7) {
+                    for (let i = 1; i <= remainingDays; i++) {
+                        const date = new Date(year, month + 1, i);
+                        createDayElement(i, date, true);
+                    }
+                }
+
+                // Render events
+                renderEvents();
+            }
+
+            function createDayElement(day, date, isOtherMonth, isToday = false) {
+                const dayElement = document.createElement('div');
+                dayElement.className = `calendar-day p-2 border-r border-b border-gray-200 ${isOtherMonth ? 'other-month bg-gray-50' : 'bg-white'} ${isToday ? 'today' : ''}`;
+                
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'text-right font-medium mb-1';
+                dayHeader.textContent = day;
+                
+                dayElement.appendChild(dayHeader);
+                dayElement.dataset.date = date.toISOString().split('T')[0];
+                
+                // Add click event to create new event
+                dayElement.addEventListener('click', (e) => {
+                    if (e.target === dayElement || e.target === dayHeader) {
+                        openEventModal(date);
+                    }
+                });
+                
+                calendarGrid.appendChild(dayElement);
+            }
+
+            function renderEvents() {
+                // Clear existing event blocks
+                document.querySelectorAll('.event-block').forEach(el => el.remove());
+
+                events.forEach(event => {
+                    const startDate = new Date(event.startDate);
+                    const endDate = new Date(event.endDate);
+                    
+                    // Calculate duration in days
+                    const durationDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    // Get all day elements in the range
+                    for (let i = 0; i < durationDays; i++) {
+                        const currentDate = new Date(startDate);
+                        currentDate.setDate(startDate.getDate() + i);
+                        const dateString = currentDate.toISOString().split('T')[0];
+                        
+                        const dayElement = document.querySelector(`.calendar-day[data-date="${dateString}"]`);
+                        if (dayElement) {
+                            createEventBlock(event, dayElement, i === 0, i === durationDays - 1);
+                        }
+                    }
+                });
+            }
+
+            function createEventBlock(event, dayElement, isFirstDay, isLastDay) {
+                const eventBlock = document.createElement('div');
+                eventBlock.className = `event-block bg-${event.color}-500 text-white`;
+                eventBlock.textContent = isFirstDay ? event.title : '';
+                eventBlock.title = `${event.title}\n${formatDateTime(event.startDate, event.startTime)} - ${formatDateTime(event.endDate, event.endTime)}\n${event.description || ''}`;
+                eventBlock.dataset.eventId = event.id;
+                
+                // Position based on time
+                if (event.startTime && event.endTime) {
+                    const startHour = parseInt(event.startTime.split(':')[0]);
+                    const startMinute = parseInt(event.startTime.split(':')[1]);
+                    const endHour = parseInt(event.endTime.split(':')[0]);
+                    const endMinute = parseInt(event.endTime.split(':')[1]);
+                    
+                    const startPosition = (startHour * 60 + startMinute) / 1440 * 100;
+                    const endPosition = (endHour * 60 + endMinute) / 1440 * 100;
+                    const height = endPosition - startPosition;
+                    
+                    eventBlock.style.top = `${startPosition}%`;
+                    eventBlock.style.height = `${height}%`;
+                } else {
+                    // All-day event
+                    eventBlock.style.top = '0';
+                    eventBlock.style.height = '20px';
+                }
+                
+                // Add click event to edit
+                eventBlock.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editEvent(event.id);
+                });
+                
+                dayElement.appendChild(eventBlock);
+            }
+
+            function openEventModal(date = null) {
+                // Reset form
+                eventForm.reset();
+                editingEventId = null;
+                deleteEventBtn.classList.add('hidden');
+                modalTitle.textContent = 'Add New Event';
+                eventIdInput.value = '';
+                
+                // Set default dates
+                const today = date ? new Date(date) : new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                
+                startDateInput.valueAsDate = today;
+                endDateInput.valueAsDate = tomorrow;
+                
+                // Set default times
+                startTimeInput.value = '09:00';
+                endTimeInput.value = '10:00';
+                
+                // Reset color selection
+                colorOptions.forEach(opt => opt.classList.remove('selected', 'border-blue-500'));
+                colorOptions[0].classList.add('selected', 'border-blue-500');
+                
+                // Show modal
+                eventModal.classList.remove('hidden');
+            }
+
+            function closeEventModal() {
+                eventModal.classList.add('hidden');
+            }
+
+            function editEvent(eventId) {
+                const event = events.find(e => e.id === eventId);
+                if (!event) return;
+                
+                editingEventId = eventId;
+                modalTitle.textContent = 'Edit Event';
+                deleteEventBtn.classList.remove('hidden');
+                
+                // Fill form with event data
+                eventIdInput.value = event.id;
+                eventTitleInput.value = event.title;
+                eventDescriptionInput.value = event.description || '';
+                startDateInput.value = event.startDate;
+                endDateInput.value = event.endDate;
+                startTimeInput.value = event.startTime || '';
+                endTimeInput.value = event.endTime || '';
+                
+                // Set color
+                colorOptions.forEach(opt => {
+                    opt.classList.remove('selected', 'border-blue-500');
+                    if (opt.dataset.color === event.color) {
+                        opt.classList.add('selected', 'border-blue-500');
+                    }
+                });
+                
+                // Show modal
+                eventModal.classList.remove('hidden');
+            }
+
+            function saveEvent() {
+                const title = eventTitleInput.value.trim();
+                const description = eventDescriptionInput.value.trim();
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                const startTime = startTimeInput.value;
+                const endTime = endTimeInput.value;
+                const selectedColor = document.querySelector('.color-option.selected').dataset.color;
+                
+                if (!title) {
+                    alert('Event title is required');
+                    return;
+                }
+                
+                if (new Date(endDate) < new Date(startDate)) {
+                    alert('End date cannot be before start date');
+                    return;
+                }
+                
+                if (startTime && endTime) {
+                    if (startDate === endDate && startTime >= endTime) {
+                        alert('End time must be after start time');
+                        return;
+                    }
+                }
+                
+                const eventData = {
+                    id: editingEventId || generateId(),
+                    title,
+                    description,
+                    startDate,
+                    endDate,
+                    startTime,
+                    endTime,
+                    color: selectedColor
+                };
+                
+                if (editingEventId) {
+                    // Update existing event
+                    const index = events.findIndex(e => e.id === editingEventId);
+                    if (index !== -1) {
+                        events[index] = eventData;
+                    }
+                } else {
+                    // Add new event
+                    events.push(eventData);
+                }
+                
+                saveEvents();
+                renderCalendar(currentMonth, currentYear);
+                closeEventModal();
+            }
+
+            function saveEvents() {
+                localStorage.setItem('calendarEvents', JSON.stringify(events));
+            }
+
+            function generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            }
+
+            function formatDateTime(dateString, timeString) {
+                const date = new Date(dateString);
+                const options = { weekday: 'short', month: 'short', day: 'numeric' };
+                const datePart = date.toLocaleDateString(undefined, options);
+                
+                if (!timeString) return datePart;
+                
+                const [hours, minutes] = timeString.split(':');
+                let hour = parseInt(hours);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                hour = hour % 12;
+                hour = hour ? hour : 12; // the hour '0' should be '12'
+                const timePart = `${hour}:${minutes} ${ampm}`;
+                
+                return `${datePart} ${timePart}`;
+            }
+        });
+    </script>
+</body>
+</html>
